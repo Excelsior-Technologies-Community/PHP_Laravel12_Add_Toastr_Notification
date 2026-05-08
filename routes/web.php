@@ -14,8 +14,11 @@ Route::get('/error', [NotificationController::class, 'error']);
 Route::get('/info', [NotificationController::class, 'info']);
 Route::get('/warning', [NotificationController::class, 'warning']);
 
-// Users routes
-Route::get('/users', [UserController::class, 'index'])->name('users.index');
-Route::post('/users/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('users.toggleStatus'); // POST
-Route::post('/users/delete/{id}', [UserController::class, 'delete'])->name('users.delete');  // POST
-Route::get('/users/export', [UserController::class, 'exportCsv'])->name('users.export');
+Route::prefix('users')->group(function () {
+    Route::get('/', [UserController::class, 'index'])->name('users.index');
+    Route::post('/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('users.toggleStatus');
+    Route::post('/delete/{id}', [UserController::class, 'delete'])->name('users.delete');
+    Route::post('/restore/{id}', [UserController::class, 'restore'])->name('users.restore');
+    Route::post('/force-delete/{id}', [UserController::class, 'forceDelete'])->name('users.forceDelete');
+    Route::get('/export', [UserController::class, 'exportCsv'])->name('users.export');
+});
