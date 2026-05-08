@@ -8,16 +8,20 @@ use Illuminate\Support\Facades\Response;
 
 class UserController extends Controller
 {
-    // List users with search
     public function index(Request $request)
     {
         $query = User::query();
 
-        // Search by name/email
+        $analytics = [
+            'total' => User::count(),
+            'active' => User::where('status', 1)->count(),
+            'inactive' => User::where('status', 0)->count(),
+            'trashed' => User::onlyTrashed()->count(),
+        ];
+
         if ($request->filled('search')) {
             $search = $request->search;
 
-            // Check if search is "active" or "inactive" (case-insensitive)
             if (strtolower($search) == 'active') {
                 $query->where('status', 1);
             } elseif (strtolower($search) == 'inactive') {
@@ -29,15 +33,15 @@ class UserController extends Controller
         }
 
         $users = $query->paginate(10);
+        $trashedUsers = User::onlyTrashed()->get();
 
-        return view('users.index', compact('users'));
+        return view('users.index', compact('users', 'trashedUsers', 'analytics'));
     }
 
-    // Toggle user status
     public function toggleStatus($id)
     {
         $user = User::findOrFail($id);
-        $user->status = !$user->status; // toggle 1 ↔ 0
+        $user->status = !$user->status;
         $user->save();
 
         return redirect()->back()->with('success', 'User status updated successfully!');
@@ -48,10 +52,23 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $user->delete();
 
-        return redirect()->back()->with('success', 'User deleted successfully!');
+        return redirect()->back()->with('success', 'User moved to trash!');
     }
 
-    // Export users to CSV
+    public function restore($id)
+    {
+        User::withTrashed()->findOrFail($id)->restore();
+
+        return redirect()->back()->with('success', 'User restored successfully!');
+    }
+
+    public function forceDelete($id)
+    {
+        User::withTrashed()->findOrFail($id)->forceDelete();
+
+        return redirect()->back()->with('success', 'User permanently deleted!');
+    }
+
     public function exportCsv()
     {
         $users = User::all();
